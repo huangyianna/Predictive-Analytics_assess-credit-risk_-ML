@@ -1,0 +1,79 @@
+###############################################import the data
+import pandas as pd
+data=pd.read_csv('heloc_dataset_v1.csv')
+
+data.keys()
+
+#############################################data cleaning 
+
+for i in range(len(data)):
+    if data['MaxDelq2PublicRecLast12M'][i]==6:
+        data['MaxDelq2PublicRecLast12M'][i]=5
+    elif data['MaxDelq2PublicRecLast12M'][i]==9:
+        data['MaxDelq2PublicRecLast12M'][i]=8
+    elif data['MSinceMostRecentDelq'][i]==-7:
+        data['MSinceMostRecentDelq'][i]=0
+    elif data['MSinceMostRecentDelq'][i]==-8:
+        data['MSinceMostRecentDelq'][i]=0
+    elif data['MSinceMostRecentDelq'][i]==-9:
+        data['MSinceMostRecentDelq'][i]=0
+
+data['RiskPerformance']=data['RiskPerformance'].astype(bool)
+data['MaxDelq2PublicRecLast12M'] = data['MaxDelq2PublicRecLast12M'].astype(object)
+data['MaxDelqEver'] = data['MaxDelqEver'].astype(object)
+data.head()
+
+###############################################X,y
+
+y=pd.DataFrame(data['RiskPerformance'])## change str into boolean
+    
+X=data.drop(['RiskPerformance'], axis=1)
+
+print(y.shape,X.shape)
+
+
+########################### define function for model evaluation
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+from sklearn.svm import SVC
+
+
+import sklearn
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.neural_network import MLPClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn import svm
+
+import numpy as np
+import pandas as pd
+from sklearn import datasets # import dataset module
+
+def evaluate_model(X,y, model, model_name, params):
+    np.random.seed(1)
+    X_train, X_test, y_train, y_test = train_test_split(X.copy(), y.copy(),test_size=0.2)
+    
+    scaler = StandardScaler()
+    X_train_prepared = scaler.fit_transform(X_train)
+    X_test_prepared = scaler.transform(X_test)
+
+    dict_model = {}
+
+    grid_search = GridSearchCV(model, params, cv=5)
+    grid_search.fit(X_train_prepared,y_train)
+
+    test_score = grid_search.score(X_test_prepared, y_test)
+
+    dict_model['Classifier'] = model_name
+    dict_model['Test Score'] = test_score
+    dict_model['CV Score'] = grid_search.best_score_
+    
+    return dict_model
+
+#####################training with random forest
+from sklearn.model_selection import GridSearchCV
+param_grid = [{'n_estimators':[60,80,100],'max_features':[2,4,6]},
+              {'bootstrap':[False],'n_estimators':[60,80,100],'max_features':[2,4,6]}]
+forest_reg = RandomForestRegressor()
+
+evaluate_model(X,y, forest_reg, 'RandomForest', param_grid)
